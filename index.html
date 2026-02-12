@@ -1,0 +1,86 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Spiritual Discovery Pathway — Prototype</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <h1 id="appName">Spiritual Discovery Pathway</h1>
+      <div class="sub" id="subtitle">Prototype (no website install required)</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+      <span class="pill">Co-branded</span>
+      <button class="ghost" onclick="SGP.resetAll()">Reset demo</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap grid">
+    <div class="card">
+      <h2 style="margin-top:0">Click through a working prototype</h2>
+      <p class="small">
+        This is a <b>local prototype</b> that runs in your browser. It simulates:
+        participant flow, external affirmation flow, results dashboard, and an admin view.
+      </p>
+
+      <div class="notice small">
+        <b>How to test:</b>
+        1) Start the participant assessment.
+        2) Add two affirmers (names + emails).
+        3) Copy each affirmer link and open it in a new tab (or private window).
+        4) Return to the dashboard to see alignment and recommendations update.
+      </div>
+
+      <div class="btnrow">
+        <a class="btn primary" href="./participant.html">Start participant assessment</a>
+        <a class="btn" href="./dashboard.html">View results dashboard</a>
+        <a class="btn" href="./admin.html">Open admin (leader) view</a>
+      </div>
+
+      <hr/>
+      <p class="small">
+        Want to customize gift names or weights? Edit <span class="code">config.json</span>.
+        (No coding required.)
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">What’s included</h3>
+      <div class="kpi">
+        <div class="box"><div class="num">1</div><div class="small">Participant flow</div></div>
+        <div class="box"><div class="num">2</div><div class="small">Affirmer flow</div></div>
+        <div class="box"><div class="num">3</div><div class="small">Results dashboard</div></div>
+        <div class="box"><div class="num">4</div><div class="small">Admin/leader view</div></div>
+      </div>
+      <hr/>
+      <div class="small">
+        <b>Current settings:</b><br/>
+        Name: Generic (“Spiritual Discovery Pathway”)<br/>
+        Branding: Co-branded (church + Terry Ruff)<br/>
+        Gift weights: Core primary, Sign secondary
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="./app.js"></script>
+<script>
+(async ()=>{
+  const cfg = await SGP.loadConfig();
+  document.getElementById("appName").textContent = cfg.appName;
+  document.getElementById("subtitle").textContent = cfg.subtitle;
+  // Ensure store exists
+  let store = SGP.ensureParticipant(SGP.getStore());
+  SGP.setStore(store);
+})();
+</script>
+</body>
+</html>

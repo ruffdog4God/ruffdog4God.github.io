@@ -1,0 +1,99 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Affirmer — Spiritual Discovery Pathway</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <h1>External Affirmation</h1>
+      <div class="sub">Select and rank Top 3 gifts you consistently see</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px;">
+      <a class="btn ghost" href="./index.html">Home</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="card">
+      <div id="content"></div>
+      <div class="btnrow">
+        <button class="primary" id="submitBtn">Submit affirmation</button>
+        <a class="btn ghost" href="./dashboard.html">View participant dashboard</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="./app.js"></script>
+<script>
+let cfg, store, token, pid;
+
+function renderForm(aff){
+  const all = cfg.gifts;
+  const opts = (sel)=> all.map(g=>`<option ${sel===g?"selected":""} value="${g}">${g}</option>`).join("");
+  document.getElementById("content").innerHTML = `
+    <div class="notice small">
+      <b>Prototype mode:</b> this link is generated from the participant assessment.
+      In the real build, it would be emailed to you securely.
+    </div>
+    <hr/>
+    <label>Your name (optional)</label>
+    <input id="an" value="${aff.affirmerName||""}" placeholder="Your name"/>
+    <label>Rank #1</label>
+    <select id="r1"><option value="">—</option>${opts(aff.top3[0])}</select>
+    <label>Rank #2</label>
+    <select id="r2"><option value="">—</option>${opts(aff.top3[1])}</select>
+    <label>Rank #3</label>
+    <select id="r3"><option value="">—</option>${opts(aff.top3[2])}</select>
+    <p class="small">Please choose three different gifts.</p>
+  `;
+}
+
+function validateAndSave(){
+  const r1 = document.getElementById("r1").value;
+  const r2 = document.getElementById("r2").value;
+  const r3 = document.getElementById("r3").value;
+  const arr = [r1,r2,r3].filter(Boolean);
+  if(arr.length!==3){ alert("Please select 3 gifts."); return false; }
+  if(new Set(arr).size!==3){ alert("Ranks must be three different gifts."); return false; }
+
+  const an = document.getElementById("an").value.trim();
+  store.affirmations[token].affirmerName = an;
+  store.affirmations[token].top3 = arr;
+  store.affirmations[token].submittedAt = new Date().toISOString();
+  SGP.setStore(store);
+  alert("Submitted. You can now view the participant dashboard.");
+  return true;
+}
+
+document.getElementById("submitBtn").onclick = ()=>validateAndSave();
+
+(async ()=>{
+  cfg = await SGP.loadConfig();
+  store = SGP.ensureParticipant(SGP.getStore());
+  token = SGP.qs("token");
+  pid = SGP.qs("pid");
+
+  if(!token){
+    document.getElementById("content").innerHTML = `<div class="notice small"><b>Missing token.</b> Open this page from the participant-generated link.</div>`;
+    document.getElementById("submitBtn").disabled = true;
+    return;
+  }
+  if(!store.affirmations[token]){
+    store.affirmations[token] = { participantId: pid||"", affirmerName:"", affirmerEmail:"", top3:[] };
+    SGP.setStore(store);
+  }
+  renderForm(store.affirmations[token]);
+})();
+</script>
+</body>
+</html>

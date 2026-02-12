@@ -1,0 +1,78 @@
+{
+  "appName": "Spiritual Discovery Pathway",
+  "subtitle": "Prototype (no website install required)",
+  "coBrandingNote": "Co-branded: Church + Terry Ruff (editable)",
+  "coreWeight": 1.0,
+  "signWeight": 0.6,
+  "rankPoints": [
+    3,
+    2,
+    1
+  ],
+  "top5Bonus": 1,
+  "gifts": [
+    "Teaching",
+    "Encouragement",
+    "Evangelism",
+    "Mercy",
+    "Serving",
+    "Hospitality",
+    "Leadership",
+    "Wisdom",
+    "Knowledge",
+    "Faith",
+    "Administration",
+    "Giving",
+    "Shepherding",
+    "Discernment",
+    "Intercession",
+    "Discipleship",
+    "Healing",
+    "Miracles",
+    "Prophecy",
+    "Tongues",
+    "Interpretation of Tongues",
+    "Deliverance",
+    "Apostleship"
+  ],
+  "coreGiftCount": 16,
+  "temperaments": [
+    "Sanguine",
+    "Choleric",
+    "Melancholy",
+    "Phlegmatic",
+    "Fruitful Blend"
+  ],
+  "passions": [
+    "Prayer",
+    "Teaching",
+    "Evangelism",
+    "Care & Mercy",
+    "Justice",
+    "Missions",
+    "Leadership",
+    "Administration",
+    "Hospitality",
+    "Creative Service"
+  ],
+  "skills": [
+    "Communication",
+    "Organization",
+    "Hospitality",
+    "Technology",
+    "Music/Arts",
+    "Teaching",
+    "Counseling",
+    "Administration",
+    "Hands-on Skills",
+    "Strategic Planning"
+  ],
+  "journeyStages": [
+    "New Believer",
+    "Growing Disciple",
+    "Serving Disciple",
+    "Disciple Maker",
+    "Emerging Leader",
+    "Multiplying Leader"
+  ]
+}

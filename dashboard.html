@@ -1,0 +1,106 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard — Spiritual Discovery Pathway</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <h1>Results Dashboard</h1>
+      <div class="sub">Participant profile + alignment + recommendations</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px;">
+      <a class="btn ghost" href="./index.html">Home</a>
+      <a class="btn" href="./participant.html">Edit responses</a>
+      <button class="ghost" onclick="SGP.resetAll()">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap grid">
+    <div class="card" id="mainCard"></div>
+    <div class="card" id="sideCard"></div>
+  </div>
+</main>
+
+<script src="./app.js"></script>
+<script>
+let cfg, store, p;
+
+function render(){
+  const scored = SGP.scoreGifts(cfg, p);
+  const align = SGP.scoreAlignment(cfg, p, store);
+  const recs = SGP.recommendPaths(p);
+
+  const top3 = p.gifts.top3 || [];
+  const affStatus = (p.affirmers||[]).map(a=>{
+    const rec = store.affirmations[a.token];
+    const done = rec && rec.top3 && rec.top3.length===3;
+    return {name:a.name||"Affirmer", done, top3:rec?.top3||[], token:a.token};
+  });
+
+  document.getElementById("mainCard").innerHTML = `
+    <h2 style="margin-top:0">${p.name ? p.name : "Participant"} — Spiritual Profile</h2>
+    <div class="kpi">
+      <div class="box"><div class="num">${top3[0]||"—"}</div><div class="small">Top Gift #1</div></div>
+      <div class="box"><div class="num">${top3[1]||"—"}</div><div class="small">Top Gift #2</div></div>
+      <div class="box"><div class="num">${top3[2]||"—"}</div><div class="small">Top Gift #3</div></div>
+      <div class="box"><div class="num">${align.score===null?"—":align.score+"%"}</div><div class="small">Affirmation alignment</div></div>
+    </div>
+
+    <hr/>
+    <h3 style="margin:0 0 8px 0">Profile signals</h3>
+    <table>
+      <tr><th>Temperament</th><td>${p.temperament||"—"}</td></tr>
+      <tr><th>Primary passion</th><td>${p.passion||"—"}</td></tr>
+      <tr><th>Skills</th><td>${(p.skills||[]).length? (p.skills||[]).join(", ") : "—"}</td></tr>
+      <tr><th>Spiritual journey</th><td>${p.journey||"—"}</td></tr>
+      <tr><th>Availability (1–4)</th><td>${p.availability||"—"}</td></tr>
+    </table>
+
+    <hr/>
+    <h3 style="margin:0 0 8px 0">Recommended next steps</h3>
+    <ul>
+      ${recs.map(r=>`<li>${r}</li>`).join("")}
+    </ul>
+    <p class="small">These recommendations are rule-based in the prototype. In the robust build, we’ll tune the rules and add more pathways.</p>
+  `;
+
+  document.getElementById("sideCard").innerHTML = `
+    <h3 style="margin-top:0">Affirmations</h3>
+    ${affStatus.length? affStatus.map(a=>`
+      <div class="card" style="padding:12px;margin-bottom:10px">
+        <div class="pill">${a.name}</div>
+        <div class="small" style="margin-top:8px">${a.done ? "✅ Submitted" : "⏳ Not submitted yet"}</div>
+        ${a.done ? `<div class="small" style="margin-top:8px"><b>Top 3:</b> ${a.top3.join(" • ")}</div>` : ""}
+        <div class="small" style="margin-top:10px">Token: <span class="code">${a.token}</span></div>
+      </div>
+    `).join("") : `<div class="small">No affirmers added yet. Go to Participant → External Affirmation.</div>`}
+
+    <hr/>
+    <h3 style="margin:0 0 8px 0">Gift scoring (preview)</h3>
+    <div class="small">Weighted: Core gifts primary, Sign gifts secondary.</div>
+    <table style="margin-top:8px">
+      <tr><th>Rank</th><th>Gift</th><th>Score</th></tr>
+      ${scored.sorted.slice(0,8).map(([g,s],i)=>`<tr><td>${i+1}</td><td>${g}</td><td>${s.toFixed(1)}</td></tr>`).join("")}
+    </table>
+  `;
+}
+
+(async ()=>{
+  cfg = await SGP.loadConfig();
+  store = SGP.ensureParticipant(SGP.getStore());
+  p = store.participant;
+  SGP.setStore(store);
+  render();
+})();
+</script>
+</body>
+</html>

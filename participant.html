@@ -1,0 +1,356 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Participant — Spiritual Discovery Pathway</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <h1>Participant Assessment</h1>
+      <div class="sub">Step-by-step flow (prototype)</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px;">
+      <a class="btn ghost" href="./index.html">Home</a>
+      <button class="ghost" onclick="SGP.resetAll()">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="card">
+      <div class="progress" aria-label="progress"><div id="bar"></div></div>
+      <div class="small" id="stepLabel" style="margin-top:10px"></div>
+
+      <div id="content" style="margin-top:14px"></div>
+
+      <div class="btnrow">
+        <button class="ghost" id="backBtn">Back</button>
+        <button class="primary" id="nextBtn">Next</button>
+        <a class="btn" href="./dashboard.html" id="finishBtn" style="display:none">Finish → View Dashboard</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="./app.js"></script>
+<script>
+let cfg, store, p;
+let step = 0;
+
+const steps = [
+  { key:"profile", title:"Profile" },
+  { key:"gifts_top5", title:"Spiritual Gifts — Select Top 5" },
+  { key:"gifts_top3", title:"Spiritual Gifts — Rank Top 3" },
+  { key:"affirmers", title:"External Affirmation — Invite 2 People" },
+  { key:"temperament", title:"Temperament" },
+  { key:"passion", title:"Heart’s Desire / Passion" },
+  { key:"skills", title:"Skills" },
+  { key:"journey", title:"Spiritual Journey" },
+  { key:"availability", title:"Time Availability" },
+];
+
+function setProgress(){
+  const pct = Math.round((step)/(steps.length)*100);
+  document.getElementById("bar").style.width = pct + "%";
+  document.getElementById("stepLabel").textContent = `Step ${step+1} of ${steps.length}: ${steps[step].title}`;
+}
+
+function render(){
+  setProgress();
+  const c = document.getElementById("content");
+  c.innerHTML = "";
+
+  const k = steps[step].key;
+
+  if(k==="profile"){
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Let’s start with the basics</h2>
+      <label>Name</label>
+      <input id="name" placeholder="Your name" value="${p.name||""}"/>
+      <label>Email (optional for prototype)</label>
+      <input id="email" placeholder="you@example.com" value="${p.email||""}"/>
+      <p class="small">Tip: You can test without real emails. The prototype generates affirmer links you can copy.</p>
+    `;
+  }
+
+  if(k==="gifts_top5"){
+    const core = cfg.gifts.slice(0, cfg.coreGiftCount);
+    const sign = cfg.gifts.slice(cfg.coreGiftCount);
+    const renderTag = (g, cls="")=>{
+      const sel = p.gifts.top5.includes(g) ? "selected" : "";
+      return `<div class="tag ${sel} ${cls}" data-g="${g}">${g}</div>`;
+    };
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Select your Top 5 gifts</h2>
+      <p class="small">Pick five. Then you’ll rank your Top 3.</p>
+      <div class="pill">Core gifts (primary weight)</div>
+      <div class="list" id="coreList">${core.map(g=>renderTag(g,"")).join("")}</div>
+      <hr/>
+      <div class="pill">Sign gifts (secondary weight)</div>
+      <div class="list" id="signList">${sign.map(g=>renderTag(g,"sign")).join("")}</div>
+      <p class="small" id="countNote"></p>
+    `;
+    c.querySelectorAll(".tag").forEach(t=>{
+      t.onclick = ()=>{
+        const g = t.getAttribute("data-g");
+        const idx = p.gifts.top5.indexOf(g);
+        if(idx>=0){ p.gifts.top5.splice(idx,1); }
+        else{
+          if(p.gifts.top5.length>=5){ alert("Top 5 already selected. Unselect one first."); return; }
+          p.gifts.top5.push(g);
+        }
+        save();
+        render();
+      };
+    });
+    document.getElementById("countNote").textContent = `Selected: ${p.gifts.top5.length} / 5`;
+  }
+
+  if(k==="gifts_top3"){
+    const chosen = p.gifts.top5.slice();
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Rank your Top 3 gifts</h2>
+      <p class="small">Choose three from your Top 5 and rank them 1–3.</p>
+      <label>Rank #1</label>
+      <select id="r1"><option value="">—</option>${chosen.map(g=>`<option ${p.gifts.top3[0]===g?"selected":""} value="${g}">${g}</option>`).join("")}</select>
+      <label>Rank #2</label>
+      <select id="r2"><option value="">—</option>${chosen.map(g=>`<option ${p.gifts.top3[1]===g?"selected":""} value="${g}">${g}</option>`).join("")}</select>
+      <label>Rank #3</label>
+      <select id="r3"><option value="">—</option>${chosen.map(g=>`<option ${p.gifts.top3[2]===g?"selected":""} value="${g}">${g}</option>`).join("")}</select>
+      <p class="small">Note: duplicates are blocked on Next.</p>
+    `;
+  }
+
+  if(k==="affirmers"){
+    if(!p.affirmers) p.affirmers = [];
+    while(p.affirmers.length<2){
+      p.affirmers.push({name:"",email:"",token:SGP.uid(14)});
+    }
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Invite two people to affirm your gifts</h2>
+      <p class="small">In the real build, the system emails each person a secure link. In this prototype, we generate links you can copy.</p>
+
+      <div class="grid">
+        ${[0,1].map(i=>`
+          <div class="card" style="padding:14px">
+            <div class="pill">Affirmer ${i+1}</div>
+            <label>Name</label>
+            <input id="a${i}n" value="${p.affirmers[i].name||""}" placeholder="Name"/>
+            <label>Email</label>
+            <input id="a${i}e" value="${p.affirmers[i].email||""}" placeholder="email@example.com"/>
+            <label>Prototype link</label>
+            <div class="code" id="a${i}l"></div>
+            <div class="btnrow" style="margin-top:10px">
+              <button class="ghost" onclick="copyLink(${i})">Copy link</button>
+              <a class="btn" id="open${i}" target="_blank">Open link</a>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    setTimeout(()=>{
+      [0,1].forEach(i=>{
+        const url = new URL("./affirmer.html", location.href);
+        url.searchParams.set("token", p.affirmers[i].token);
+        url.searchParams.set("pid", p.id);
+        document.getElementById(`a${i}l`).textContent = url.toString();
+        document.getElementById(`open${i}`).href = url.toString();
+
+        // ensure stored affirmation record exists
+        if(!store.affirmations[p.affirmers[i].token]){
+          store.affirmations[p.affirmers[i].token] = {
+            participantId: p.id,
+            affirmerName: p.affirmers[i].name || "",
+            affirmerEmail: p.affirmers[i].email || "",
+            top3: []
+          };
+          SGP.setStore(store);
+        }
+      });
+    },0);
+  }
+
+  if(k==="temperament"){
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Select your temperament</h2>
+      <div class="list" id="temps">
+        ${cfg.temperaments.map(t=>`<div class="tag ${p.temperament===t?"selected":""}" data-t="${t}">${t}</div>`).join("")}
+      </div>
+    `;
+    c.querySelectorAll(".tag").forEach(t=>{
+      t.onclick = ()=>{
+        p.temperament = t.getAttribute("data-t");
+        save(); render();
+      }
+    });
+  }
+
+  if(k==="passion"){
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Choose your primary passion</h2>
+      <div class="list" id="passions">
+        ${cfg.passions.map(t=>`<div class="tag ${p.passion===t?"selected":""}" data-p="${t}">${t}</div>`).join("")}
+      </div>
+    `;
+    c.querySelectorAll(".tag").forEach(t=>{
+      t.onclick = ()=>{
+        p.passion = t.getAttribute("data-p");
+        save(); render();
+      }
+    });
+  }
+
+  if(k==="skills"){
+    const renderSkill = (s)=>{
+      const sel = (p.skills||[]).includes(s) ? "selected" : "";
+      return `<div class="tag ${sel}" data-s="${s}">${s}</div>`;
+    };
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Select your strongest skills (up to 5)</h2>
+      <p class="small">Pick the ones you feel confident using.</p>
+      <div class="list" id="skillsList">${cfg.skills.map(renderSkill).join("")}</div>
+      <p class="small" id="skillNote"></p>
+    `;
+    c.querySelectorAll(".tag").forEach(t=>{
+      t.onclick = ()=>{
+        const s = t.getAttribute("data-s");
+        p.skills = p.skills || [];
+        const idx = p.skills.indexOf(s);
+        if(idx>=0) p.skills.splice(idx,1);
+        else{
+          if(p.skills.length>=5){ alert("Up to 5 skills. Unselect one first."); return; }
+          p.skills.push(s);
+        }
+        save(); render();
+      }
+    });
+    document.getElementById("skillNote").textContent = `Selected: ${(p.skills||[]).length} / 5`;
+  }
+
+  if(k==="journey"){
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Where are you in your spiritual journey?</h2>
+      <div class="list">
+        ${cfg.journeyStages.map(t=>`<div class="tag ${p.journey===t?"selected":""}" data-j="${t}">${t}</div>`).join("")}
+      </div>
+    `;
+    c.querySelectorAll(".tag").forEach(t=>{
+      t.onclick = ()=>{
+        p.journey = t.getAttribute("data-j");
+        save(); render();
+      }
+    });
+  }
+
+  if(k==="availability"){
+    c.innerHTML = `
+      <h2 style="margin:0 0 8px 0">Time availability</h2>
+      <p class="small">1 = light availability • 4 = leadership capacity</p>
+      <label>Availability (1–4)</label>
+      <select id="avail">
+        ${[1,2,3,4].map(v=>`<option ${p.availability==v?"selected":""} value="${v}">${v}</option>`).join("")}
+      </select>
+      <div class="notice small" style="margin-top:12px">
+        When you finish, open the dashboard to see your profile + recommendations.
+      </div>
+    `;
+  }
+
+  // Back/Next button visibility
+  document.getElementById("backBtn").style.display = step===0 ? "none" : "inline-flex";
+  document.getElementById("nextBtn").style.display = step===steps.length-1 ? "none" : "inline-flex";
+  document.getElementById("finishBtn").style.display = step===steps.length-1 ? "inline-flex" : "none";
+}
+
+function save(){
+  store.participant = p;
+  SGP.setStore(store);
+}
+
+function validateStep(){
+  const k = steps[step].key;
+  if(k==="profile"){
+    p.name = document.getElementById("name").value.trim();
+    p.email = document.getElementById("email").value.trim();
+    save(); return true;
+  }
+  if(k==="gifts_top5"){
+    if(p.gifts.top5.length!==5){ alert("Please select exactly 5 gifts."); return false; }
+    return true;
+  }
+  if(k==="gifts_top3"){
+    const r1 = document.getElementById("r1").value;
+    const r2 = document.getElementById("r2").value;
+    const r3 = document.getElementById("r3").value;
+    const arr = [r1,r2,r3].filter(Boolean);
+    if(arr.length!==3){ alert("Please select 3 gifts for Top 3 ranking."); return false; }
+    const set = new Set(arr);
+    if(set.size!==3){ alert("Ranks must be three different gifts."); return false; }
+    p.gifts.top3 = arr;
+    save(); return true;
+  }
+  if(k==="affirmers"){
+    [0,1].forEach(i=>{
+      p.affirmers[i].name = document.getElementById(`a${i}n`).value.trim();
+      p.affirmers[i].email = document.getElementById(`a${i}e`).value.trim();
+      // sync to affirmation record
+      store.affirmations[p.affirmers[i].token] = store.affirmations[p.affirmers[i].token] || {participantId:p.id, top3:[]};
+      store.affirmations[p.affirmers[i].token].affirmerName = p.affirmers[i].name;
+      store.affirmations[p.affirmers[i].token].affirmerEmail = p.affirmers[i].email;
+    });
+    save();
+    SGP.setStore(store);
+    return true;
+  }
+  if(k==="availability"){
+    p.availability = parseInt(document.getElementById("avail").value,10);
+    save();
+
+    // Mark completion into admin list (store.people)
+    const existing = store.people.findIndex(x=>x.id===p.id);
+    const record = { ...p, completedAt: SGP.uid(1) ? new Date().toISOString() : new Date().toISOString() };
+    if(existing>=0) store.people[existing] = record;
+    else store.people.push(record);
+    SGP.setStore(store);
+    return true;
+  }
+  // nothing required for others
+  if(k==="temperament"){ if(!p.temperament){ alert("Please select a temperament."); return false; } }
+  if(k==="passion"){ if(!p.passion){ alert("Please select a passion."); return false; } }
+  if(k==="journey"){ if(!p.journey){ alert("Please select a spiritual journey stage."); return false; } }
+  if(k==="skills"){ /* optional */ }
+  save(); return true;
+}
+
+function copyLink(i){
+  const url = new URL("./affirmer.html", location.href);
+  url.searchParams.set("token", p.affirmers[i].token);
+  url.searchParams.set("pid", p.id);
+  navigator.clipboard.writeText(url.toString()).then(()=>alert("Link copied."));
+}
+
+document.getElementById("backBtn").onclick = ()=>{
+  if(step>0){ step--; render(); }
+};
+document.getElementById("nextBtn").onclick = ()=>{
+  if(!validateStep()) return;
+  if(step<steps.length-1){ step++; render(); }
+};
+
+(async ()=>{
+  cfg = await SGP.loadConfig();
+  store = SGP.ensureParticipant(SGP.getStore());
+  p = store.participant;
+  SGP.setStore(store);
+  render();
+})();
+</script>
+</body>
+</html>

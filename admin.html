@@ -1,0 +1,138 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin — Spiritual Discovery Pathway</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <h1>Admin / Leader View</h1>
+      <div class="sub">Search + filter (prototype)</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px;">
+      <a class="btn ghost" href="./index.html">Home</a>
+      <a class="btn" href="./dashboard.html">Participant dashboard</a>
+      <button class="ghost" onclick="SGP.resetAll()">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="card">
+      <div class="grid">
+        <div>
+          <h2 style="margin-top:0">Filter</h2>
+          <label>Gift contains</label>
+          <select id="giftFilter"></select>
+          <label>Minimum availability</label>
+          <select id="availFilter">
+            <option value="0">Any</option>
+            <option value="1">1+</option>
+            <option value="2">2+</option>
+            <option value="3">3+</option>
+            <option value="4">4</option>
+          </select>
+          <label>Spiritual journey</label>
+          <select id="journeyFilter"></select>
+
+          <div class="btnrow">
+            <button class="primary" id="applyBtn">Apply</button>
+            <button class="ghost" id="seedBtn">Seed sample people</button>
+          </div>
+
+          <p class="small">In the real build, this view would show the whole church’s participant data, with export and placement workflows.</p>
+        </div>
+
+        <div>
+          <h2 style="margin-top:0">Results</h2>
+          <div id="results"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="./app.js"></script>
+<script>
+let cfg, store;
+
+function seed(){
+  const names = ["Alex","Jordan","Casey","Morgan","Taylor","Riley","Sam","Jamie"];
+  for(let i=0;i<6;i++){
+    const p = {
+      id: SGP.uid(12),
+      name: names[Math.floor(Math.random()*names.length)] + " " + (Math.floor(Math.random()*90)+10),
+      email:"",
+      gifts:{ top5:[], top3:[] },
+      affirmers:[],
+      temperament: cfg.temperaments[Math.floor(Math.random()*cfg.temperaments.length)],
+      passion: cfg.passions[Math.floor(Math.random()*cfg.passions.length)],
+      skills: cfg.skills.sort(()=>0.5-Math.random()).slice(0,3),
+      journey: cfg.journeyStages[Math.floor(Math.random()*cfg.journeyStages.length)],
+      availability: [1,2,3,4][Math.floor(Math.random()*4)]
+    };
+    const shuffled = cfg.gifts.slice().sort(()=>0.5-Math.random());
+    p.gifts.top5 = shuffled.slice(0,5);
+    p.gifts.top3 = shuffled.slice(0,3);
+    store.people.push(p);
+  }
+  SGP.setStore(store);
+  alert("Seeded sample people for admin testing.");
+  renderResults();
+}
+
+function renderResults(){
+  const gift = document.getElementById("giftFilter").value;
+  const minAvail = parseInt(document.getElementById("availFilter").value,10);
+  const j = document.getElementById("journeyFilter").value;
+
+  let people = store.people || [];
+  if(gift!=="Any") people = people.filter(p=> (p.gifts?.top3||[]).includes(gift));
+  if(minAvail>0) people = people.filter(p=> (p.availability||0) >= minAvail);
+  if(j!=="Any") people = people.filter(p=> p.journey===j);
+
+  if(people.length===0){
+    document.getElementById("results").innerHTML = `<div class="small">No matches yet. Try “Seed sample people” or complete a participant run.</div>`;
+    return;
+  }
+
+  document.getElementById("results").innerHTML = `
+    <table>
+      <tr><th>Name</th><th>Top 3 Gifts</th><th>Passion</th><th>Avail</th></tr>
+      ${people.slice(0,20).map(p=>`
+        <tr>
+          <td>${p.name||"—"}</td>
+          <td>${(p.gifts?.top3||[]).join(" • ")}</td>
+          <td>${p.passion||"—"}</td>
+          <td>${p.availability||"—"}</td>
+        </tr>
+      `).join("")}
+    </table>
+    <div class="small" style="margin-top:10px">Showing ${Math.min(20,people.length)} of ${people.length} matches.</div>
+  `;
+}
+
+(async ()=>{
+  cfg = await SGP.loadConfig();
+  store = SGP.ensureParticipant(SGP.getStore());
+
+  // Populate filters
+  document.getElementById("giftFilter").innerHTML = `<option>Any</option>` + cfg.gifts.map(g=>`<option value="${g}">${g}</option>`).join("");
+  document.getElementById("journeyFilter").innerHTML = `<option>Any</option>` + cfg.journeyStages.map(g=>`<option value="${g}">${g}</option>`).join("");
+
+  document.getElementById("applyBtn").onclick = renderResults;
+  document.getElementById("seedBtn").onclick = seed;
+
+  SGP.setStore(store);
+  renderResults();
+})();
+</script>
+</body>
+</html>
